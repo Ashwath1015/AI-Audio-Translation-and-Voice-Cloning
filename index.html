@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceDub AI - Translate Video in Native Voice</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">VoiceDub <span>AI</span></div>
+            <div class="nav-controls">
+                <button id="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="mode-icon">🌙</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero container">
+            <div class="hero-content">
+                <h1>Translate your video into any language, <span class="highlight">in native voice</span></h1>
+                <p>Upload a video, pick a language, and get a dubbed version that sounds exactly like you. No studio required.</p>
+                <a href="#app-section" class="btn btn-primary">Try it now</a>
+            </div>
+            <div class="hero-visual">
+                <div class="ai-visual-system">
+                    <!-- Central Wave Ball -->
+                    <div class="wave-ball">
+                        <div class="wave wave-1"></div>
+                        <div class="wave wave-2"></div>
+                        <div class="wave wave-3"></div>
+                    </div>
+
+                    <!-- Orbiting Figures -->
+                    <div class="orbit-container">
+                        <div class="orbit-item" style="--i:0;"><img src="https://i.pravatar.cc/100?u=1" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                        <div class="orbit-item" style="--i:1;"><img src="https://i.pravatar.cc/100?u=2" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                        <div class="orbit-item" style="--i:2;"><img src="https://i.pravatar.cc/100?u=3" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                        <div class="orbit-item" style="--i:3;"><img src="https://i.pravatar.cc/100?u=4" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                        <div class="orbit-item" style="--i:4;"><img src="https://i.pravatar.cc/100?u=5" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                        <div class="orbit-item" style="--i:5;"><img src="https://i.pravatar.cc/100?u=6" class="figure-img" alt="User"><span class="logo">🎙️</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it Works Section -->
+        <section id="how-it-works" class="container how-it-works">
+            <h2 class="section-title">How it Works</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Upload & Analyze</h3>
+                    <p>Upload your video. Our AI analyzes your unique vocal timbre and speech patterns.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Translate & Clone</h3>
+                    <p>We translate the text and generate new audio that mirrors your voice in the target language.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Perfect Sync</h3>
+                    <p>The dubbed audio is seamlessly merged with the video, ensuring perfect lip-sync and timing.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="app-section" class="app-container container">
+            <div class="glass-card">
+                <h2>Dub Your Video</h2>
+                <p class="subtitle">Step into the future of localization</p>
+
+
+                <div class="upload-grid">
+                    <div class="upload-col">
+                        <div class="upload-box" id="drop-zone">
+                            <input type="file" id="video-upload" accept="video/*" hidden>
+                            <label for="video-upload" class="upload-label" id="upload-placeholder">
+                                <span class="icon">📁</span>
+                                <span class="main-text">Drag & drop your video here or <span class="underline">click to browse</span></span>
+                                <span class="hint">Supported: MP4, MOV, WebM · Max 500 MB · Up to 10 minutes</span>
+                            </label>
+
+                            <div id="file-preview-container" class="hidden">
+                                <div class="preview-video-wrapper">
+                                    <video id="local-preview" muted></video>
+                                </div>
+                                <div class="file-info">
+                                    <span id="file-name-display">filename.mp4</span>
+                                    <span id="file-size-display">0 MB</span>
+                                </div>
+                                <button id="remove-file" class="btn-remove">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-col">
+                        <div class="selection-box">
+                            <div class="option-group">
+                                <label for="source-lang">Original language</label>
+                                <select id="source-lang">
+                                    <option value="auto">Auto-detect 🔍</option>
+                                    <option value="english">English 🇺🇸</option>
+                                    <option value="spanish">Spanish 🇪🇸</option>
+                                    <option value="french">French 🇫🇷</option>
+                                    <option value="german">German 🇩🇪</option>
+                                    <option value="hindi">Hindi 🇮🇳</option>
+                                    <option value="chinese">Chinese 🇨🇳</option>
+                                    <option value="japanese">Japanese 🇯🇵</option>
+                                </select>
+                            </div>
+
+                            <div class="option-group">
+                                <label for="language-select">Translate to</label>
+                                <select id="language-select">
+                                    <option value="english">English 🇺🇸</option>
+                                    <option value="hindi" selected>Hindi 🇮🇳</option>
+                                    <option value="spanish">Spanish 🇪🇸</option>
+                                    <option value="french">French 🇫🇷</option>
+                                    <option value="german">German 🇩🇪</option>
+                                    <option value="arabic">Arabic 🇸🇦</option>
+                                    <option value="chinese">Chinese 🇨🇳</option>
+                                    <option value="japanese">Japanese 🇯🇵</option>
+                                    <option value="portuguese">Portuguese 🇧🇷</option>
+                                    <option value="russian">Russian 🇷🇺</option>
+                                </select>
+                            </div>
+
+                            <div class="consent-group">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="consent-checkbox">
+                                    <span class="checkmark"></span>
+                                    <span class="consent-text">I confirm I own this video and have permission to clone this voice</span>
+                                </label>
+                            </div>
+
+                            <div id="error-message" class="error-text hidden"></div>
+                            <button id="translate-btn" class="btn btn-accent" disabled>Start Translation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="processing-section" class="hidden">
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <p id="status-text">Analyzing voice patterns...</p>
+                    <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+
+                <div id="result-section" class="hidden">
+                    <div class="result-header">
+                        <h3>✨ Translation Complete!</h3>
+                        <button id="reset-btn" class="btn btn-secondary">Translate Another Video</button>
+                    </div>
+
+                    <div class="comparison-grid">
+                        <div class="video-card">
+                            <span class="card-label">Original</span>
+                            <div class="video-preview">
+                                <video id="result-original-video" controls muted>
+                                    <source src="dummy for AT.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        <div class="video-card">
+                            <span class="card-label">Translated</span>
+                            <div class="video-preview">
+                                <video id="result-translated-video" controls>
+                                    <source src="translated.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="download-actions">
+                        <button class="btn btn-primary">Download Dubbed Video</button>
+                    </div>
+
+                    <div class="transcript-section">
+                        <h4>Transcription & Translation</h4>
+                        <div class="transcript-grid">
+                            <div class="transcript-col">
+                                <span class="col-header">Original (Detected)</span>
+                                <div class="transcript-content" id="original-transcript">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <div class="transcript-col">
+                                <span class="col-header">Translated (<span id="final-lang">Hindi</span>)</span>
+                                <div class="transcript-content" id="translated-transcript">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="container faq-section">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <button class="faq-question">Which languages are supported? <span class="arrow">▼</span></button>
+                    <div class="faq-answer">
+                        <p>We support a wide range of global languages using Argos Translate and gTTS, including English, Hindi, Spanish, French, German, Arabic, Chinese, Japanese, and Portuguese.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">Is my data and voice data private? <span class="arrow">▼</span></button>
+                    <div class="faq-answer">
+                        <p>Yes. Our system is built on a local-first AI pipeline. Your videos and audio are processed on your own hardware or local server, ensuring your biometric data never leaves your controlled environment.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">What is the maximum video length? <span class="arrow">▼</span></button>
+                    <div class="faq-answer">
+                        <p>The current system allows uploads up to 500 MB. Since processing is done locally, the length is limited primarily by your hardware's RAM and disk space.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">How is the audio quality? <span class="arrow">▼</span></button>
+                    <div class="faq-answer">
+                        <p>We use high-quality voice synthesis through gTTS and a multi-stage pipeline (Extract $\rightarrow$ Transcribe $\rightarrow$ Translate $\rightarrow$ Synthesize $\rightarrow$ Merge) to ensure the final output is clear and synchronized with the original video.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Local-First Advantages Section -->
+        <section id="advantages" class="container pricing-section">
+            <h2 class="section-title">The Local-First Advantage</h2>
+            <div class="pricing-grid">
+                <div class="price-card">
+                    <div class="price-tier">🔒 Privacy</div>
+                    <div class="price-amount">Total<span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);"> Control</span></div>
+                    <ul class="price-features">
+                        <li>No cloud uploads required</li>
+                        <li>Data never leaves your machine</li>
+                        <li>Zero biometric data mining</li>
+                        <li>Complete offline capability</li>
+                    </ul>
+                    <div class="btn-secondary" style="padding: 1rem; border-radius: 12px; font-weight: 600; text-align: center;">Secure by Design</div>
+                </div>
+                <div class="price-card featured">
+                    <div class="price-tier">💰 Cost</div>
+                    <div class="price-amount">$0<span>/forever</span></div>
+                    <ul class="price-features">
+                        <li>No monthly subscriptions</li>
+                        <li>No expensive API credits</li>
+                        <li>Open-source model architecture</li>
+                        <li>Unlimited processing power</li>
+                    </ul>
+                    <div class="btn-primary" style="padding: 1rem; border-radius: 12px; color: white; font-weight: 600; text-align: center;">100% Free</div>
+                </div>
+                <div class="price-card">
+                    <div class="price-tier">⚙️ Performance</div>
+                    <div class="price-amount">Local<span style="font-size: 1rem; font-weight: 400; color: var(--text-muted);"> Power</span></div>
+                    <ul class="price-features">
+                        <li>Leverages your own GPU/CPU</li>
+                        <li>No network latency delays</li>
+                        <li>Customizable AI parameters</li>
+                        <li>Direct hardware optimization</li>
+                    </ul>
+                    <div class="btn-secondary" style="padding: 1rem; border-radius: 12px; font-weight: 600; text-align: center;">High Efficiency</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="main-footer">
+        <div class="container footer-content">
+            <div class="footer-links">
+                <div class="link-col">
+                    <h4>Product</h4>
+                    <a href="#" class="footer-link" data-page="pricing">Pricing</a>
+                    <a href="#" class="footer-link" data-page="features">Features</a>
+                    <a href="#" class="footer-link" data-page="api">API</a>
+                </div>
+                <div class="link-col">
+                    <h4>Company</h4>
+                    <a href="#" class="footer-link" data-page="about">About</a>
+                    <a href="#" class="footer-link" data-page="privacy">Privacy</a>
+                    <a href="#" class="footer-link" data-page="terms">Terms</a>
+                </div>
+                <div class="link-col">
+                    <h4>Support</h4>
+                    <a href="#" class="footer-link" data-page="help">Help Center</a>
+                    <a href="#" class="footer-link" data-page="contact">Contact</a>
+                    <a href="#" class="footer-link" data-page="status">Status</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 VoiceDub AI. <span class="demo-note">Powered by Local AI Pipeline.</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Page Title</h3>
+                <button id="close-modal" class="close-btn">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body">
+                <!-- Content populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

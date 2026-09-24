@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+motor
+pydantic-settings
+python-dotenv
+pymongo
+openai-whisper
+deep-translator
+edge-tts
+requests
+pydub
+TTS

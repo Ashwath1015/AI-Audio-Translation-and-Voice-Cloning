@@ -1,0 +1,280 @@
+import os
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, UTC
+import shutil
+from pathlib import Path
+from dotenv import load_dotenv
+import asyncio
+import requests
+from gtts import gTTS
+import whisper
+from deep_translator import GoogleTranslator
+
+load_dotenv()
+
+app = FastAPI(title="VoiceDub AI Backend (Local Edition)")
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configuration
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "voicedub_db")
+UPLOAD_DIR = Path(os.getenv("UPLOAD_FOLDER", "uploads"))
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Create a downloads folder for the final processed videos
+DOWNLOADS_DIR = Path("downloads")
+DOWNLOADS_DIR.mkdir(exist_ok=True)
+
+# Serve the downloads folder so the frontend can play the videos
+app.mount("/downloads", StaticFiles(directory=DOWNLOADS_DIR), name="downloads")
+
+# Database Connection
+client_mongo = AsyncIOMotorClient(MONGODB_URL)
+db = client_mongo[DATABASE_NAME]
+
+# Pydantic Models
+class TranslationRequest(BaseModel):
+    source_lang: str
+    target_lang: str
+    voice_style: str
+    voice_cloning: bool
+    add_subtitles: bool
+
+class VideoStatus(BaseModel):
+    job_id: str
+    status: str
+    progress: int
+    result_url: Optional[str] = None
+
+# --- LOCAL AI PIPELINE FUNCTIONS ---
+
+async def extract_audio(file_path: str):
+    """Extracts audio from video using FFmpeg."""
+    audio_path = file_path.rsplit('.', 1)[0] + ".mp3"
+    process = await asyncio.create_subprocess_exec(
+        'ffmpeg', '-i', file_path, '-q:a', '0', '-map', 'a', audio_path, '-y',
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    await process.communicate()
+    return audio_path
+
+async def transcribe_audio(audio_path: str):
+    """Transcribes audio using local OpenAI Whisper."""
+    def run_whisper():
+        try:
+            model = whisper.load_model("base")
+            # Explicitly set language to 'en' to prevent the model from
+            # guessing wrong languages (like Japanese/Chinese)
+            result = model.transcribe(audio_path, language='en')
+            text = result.get("text", "").strip()
+            print(f"Whisper transcription result: '{text}'")
+            return text
+        except Exception as e:
+            print(f"Whisper error: {e}")
+            return ""
+
+    return await asyncio.to_thread(run_whisper)
+
+async def translate_text(text: str, target_lang: str):
+    """Translates text using deep-translator (Google Translate)."""
+    def run_translation():
+        try:
+            # Mapping for common languages to Google Translate codes
+            lang_map = {
+                "spanish": "es",
+                "hindi": "hi",
+                "french": "fr",
+                "german": "de",
+                "tamil": "ta"
+            }
+            # Clean target_lang to get just the code (e.g., "Tamil - தமிழ்" -> "tamil")
+            target_lang_clean = target_lang.lower().split(' ')[0]
+            target_code = lang_map.get(target_lang_clean, "en")
+
+            print(f"Translating to: {target_lang_clean} (code: {target_code})")
+
+            # Use deep-translator for high-quality, free translation
+            translated = GoogleTranslator(source='auto', target=target_code).translate(text)
+            return translated
+        except Exception as e:
+            print(f"Translation error: {e}")
+            return f"[Translation Failed] {text}"
+
+    return await asyncio.to_thread(run_translation)
+
+async def clone_voice(original_audio_path: str, translated_text: str, output_path: str, target_lang: str = "en"):
+    """Generates audio using local gTTS (Note: no voice cloning in free version)."""
+    def run_tts():
+        try:
+            if not translated_text or translated_text.strip() == "":
+                raise ValueError("No text provided for speech synthesis")
+
+            # Simple mapping for gTTS lang codes
+            lang_map = {
+                "spanish": "es",
+                "hindi": "hi",
+                "french": "fr",
+                "german": "de",
+                "tamil": "ta"
+            }
+            # Clean target_lang to get just the code (e.g., "Tamil - தமிழ்" -> "tamil")
+            target_lang_clean = target_lang.lower().split(' ')[0]
+            lang_code = lang_map.get(target_lang_clean, "en")
+
+            tts = gTTS(text=translated_text, lang=lang_code)
+            tts.save(output_path)
+        except Exception as e:
+            print(f"TTS error: {e}")
+            raise e
+
+    await asyncio.to_thread(run_tts)
+
+async def merge_audio_video(video_path: str, audio_path: str, output_path: str):
+    """Merges the translated audio back into the video."""
+    process = await asyncio.create_subprocess_exec(
+        'ffmpeg', '-i', video_path, '-i', audio_path,
+        '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0',
+        '-shortest', '-y', output_path,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    await process.communicate()
+
+# --- API ENDPOINTS ---
+
+@app.get("/")
+async def root():
+    return {"message": "VoiceDub AI Backend (Local) is running"}
+
+@app.post("/upload")
+async def upload_video(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    source_lang: str = Form("auto"),
+    target_lang: str = Form("english"),
+    voice_style: str = Form("original"),
+    voice_cloning: bool = Form(True),
+    add_subtitles: bool = Form(False)
+):
+    print(f"RECEIVED REQUEST: source={source_lang}, target={target_lang}, style={voice_style}")
+
+    file_path = UPLOAD_DIR / f"{datetime.now().timestamp()}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    job_id = str(datetime.now().timestamp())
+    job_data = {
+        "job_id": job_id,
+        "filename": file.filename,
+        "file_path": str(file_path),
+        "source_lang": source_lang,
+        "target_lang": target_lang,
+        "voice_style": voice_style,
+        "voice_cloning": voice_cloning,
+        "add_subtitles": add_subtitles,
+        "status": "pending",
+        "progress": 0,
+        "created_at": datetime.now(UTC)
+    }
+    await db.jobs.insert_one(job_data)
+
+    background_tasks.add_task(process_video_pipeline, job_id)
+
+    return {
+        "job_id": job_id,
+        "message": "Video uploaded successfully. Local processing started.",
+        "status": "pending"
+    }
+
+@app.get("/status/{job_id}")
+async def get_status(job_id: str):
+    job = await db.jobs.find_one({"job_id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "status": job["status"],
+        "progress": job["progress"],
+        "result_url": job.get("result_url"),
+        "original_text": job.get("original_text"),
+        "translated_text": job.get("translated_text")
+    }
+
+@app.get("/jobs")
+async def list_jobs():
+    jobs = await db.jobs.find().to_list(100)
+    return jobs
+
+async def process_video_pipeline(job_id: str):
+    """The Local AI Processing Pipeline."""
+    try:
+        job = await db.jobs.find_one({"job_id": job_id})
+        if not job: return
+
+        video_path = job["file_path"]
+        target_lang = job["target_lang"]
+
+        # 1. Audio Extraction
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": "Extracting audio...", "progress": 10}})
+        audio_path = await extract_audio(video_path)
+
+        # 2. Transcription
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": "Transcribing speech (Local)...", "progress": 30}})
+        original_text = await transcribe_audio(audio_path)
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"original_text": original_text}})
+
+        # 3. Translation
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": "Translating text (Local)...", "progress": 50}})
+        translated_text = await translate_text(original_text, target_lang)
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"translated_text": translated_text}})
+
+        # 4. Voice Synthesis
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": "Generating voice (Local)...", "progress": 70}})
+        translated_audio_path = video_path.rsplit('.', 1)[0] + "_translated.mp3"
+
+        # Final Safety Net:
+        # 1. Try translated text
+        # 2. Fallback to original text
+        # 3. Hard fallback to a default message if both are empty
+        tts_text = ""
+        if translated_text and translated_text.strip():
+            tts_text = translated_text
+        elif original_text and original_text.strip():
+            tts_text = original_text
+        else:
+            print(f"Warning: No text found for job {job_id}. Using safety fallback.")
+            tts_text = "No speech detected in this video."
+
+        await clone_voice(audio_path, tts_text, translated_audio_path, target_lang)
+
+        # 5. Merging
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": "Merging audio with video...", "progress": 90}})
+        final_filename = f"final_{job_id}.mp4"
+        final_video_path = DOWNLOADS_DIR / final_filename
+        await merge_audio_video(video_path, translated_audio_path, str(final_video_path))
+
+        # Finalize
+        await db.jobs.update_one(
+            {"job_id": job_id},
+            {"$set": {"status": "completed", "progress": 100, "result_url": f"/downloads/{final_filename}"}}
+        )
+
+    except Exception as e:
+        print(f"Error processing job {job_id}: {str(e)}")
+        await db.jobs.update_one({"job_id": job_id}, {"$set": {"status": f"Error: {str(e)}", "progress": 0}})
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,199 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    // Upload Elements
+    const videoUpload = document.getElementById('video-upload');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const filePreviewContainer = document.getElementById('file-preview-container');
+    const localPreview = document.getElementById('local-preview');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const fileSizeDisplay = document.getElementById('file-size-display');
+    const removeFileBtn = document.getElementById('remove-file');
+
+    // Link Upload
+    const urlUpload = document.getElementById('url-upload');
+    const urlSubmit = document.getElementById('url-submit');
+
+    // General Controls
+    const translateBtn = document.getElementById('translate-btn');
+    const langSelect = document.getElementById('language-select');
+    const errorMessage = document.getElementById('error-message');
+    const processingSection = document.getElementById('processing-section');
+    const progressBar = document.getElementById('progress-bar');
+    const statusText = document.getElementById('status-text');
+    const resultSection = document.getElementById('result-section');
+    const finalLangDisplay = document.getElementById('final-lang');
+    const resetBtn = document.getElementById('reset-btn');
+    const dropZone = document.getElementById('drop-zone');
+
+    // --- Theme Logic ---
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        body.classList.add('dark-mode');
+        themeToggle.innerHTML = '<span class="mode-icon">☀️</span>';
+    }
+
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        const isDark = body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        themeToggle.innerHTML = isDark ? '<span class="mode-icon">☀️</span>' : '<span class="mode-icon">🌙</span>';
+    });
+
+    // --- File Validation & Handling ---
+    const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+    const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+
+    function showError(msg) {
+        errorMessage.textContent = msg;
+        errorMessage.classList.remove('hidden');
+        setTimeout(() => errorMessage.classList.add('hidden'), 4000);
+    }
+
+    function handleFile(file) {
+        if (!file) return;
+
+        // Validate Type
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            showError("Unsupported file type. Please use MP4, MOV or WebM.");
+            return;
+        }
+
+        // Validate Size
+        if (file.size > MAX_FILE_SIZE) {
+            showError("File is too large. Maximum size is 500 MB.");
+            return;
+        }
+
+        // Clear errors and show preview
+        errorMessage.classList.add('hidden');
+        uploadPlaceholder.classList.add('hidden');
+        filePreviewContainer.classList.remove('hidden');
+
+        // Set File Info
+        fileNameDisplay.textContent = file.name;
+        fileSizeDisplay.textContent = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+        // Create Video Preview
+        const fileURL = URL.createObjectURL(file);
+        localPreview.src = fileURL;
+        localPreview.load();
+
+        translateBtn.disabled = false;
+    }
+
+    videoUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        handleFile(file);
+    });
+
+    removeFileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        videoUpload.value = '';
+        uploadPlaceholder.classList.remove('hidden');
+        filePreviewContainer.classList.add('hidden');
+        translateBtn.disabled = true;
+        localPreview.src = '';
+    });
+
+    // Drag and Drop support
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+            // Set the input value so it's consistent
+            videoUpload.files = files;
+        }
+    });
+
+    // --- Link Upload Logic ---
+    urlSubmit.addEventListener('click', () => {
+        const url = urlUpload.value.trim();
+        if (!url) {
+            showError("Please enter a valid URL.");
+            return;
+        }
+
+        // Pretend to validate link
+        urlUpload.value = '';
+        urlUpload.placeholder = "Link added successfully!";
+        translateBtn.disabled = false;
+
+        // Highlight the input to show success
+        urlUpload.style.borderColor = 'var(--primary)';
+        setTimeout(() => {
+            urlUpload.style.borderColor = 'var(--card-border)';
+            urlUpload.placeholder = "YouTube, Vimeo or direct URL...";
+        }, 3000);
+    });
+
+    // --- Fake Translation Simulation ---
+    const statusMessages = [
+        "Analyzing voice fingerprints...",
+        "Extracting vocal timbre...",
+        "Translating speech to text...",
+        "Synthesizing voice match...",
+        "Dubbing audio tracks...",
+        "Finalizing video sync..."
+    ];
+
+    async function simulateTranslation() {
+        document.querySelector('.upload-grid').classList.add('hidden');
+        processingSection.classList.remove('hidden');
+        translateBtn.disabled = true;
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 5;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                showResult();
+            }
+            progressBar.style.width = `${progress}%`;
+
+            const messageIndex = Math.floor((progress / 100) * statusMessages.length);
+            if (messageIndex < statusMessages.length) {
+                statusText.textContent = statusMessages[messageIndex];
+            }
+        }, 150);
+    }
+
+    function showResult() {
+        processingSection.classList.add('hidden');
+        resultSection.classList.remove('hidden');
+
+        const langName = langSelect.options[langSelect.selectedIndex].text.split(' ')[0];
+        finalLangDisplay.textContent = langName;
+    }
+
+    translateBtn.addEventListener('click', simulateTranslation);
+
+    resetBtn.addEventListener('click', () => {
+        resultSection.classList.add('hidden');
+        processingSection.classList.add('hidden');
+        document.querySelector('.upload-grid').classList.add('hidden');
+
+        videoUpload.value = '';
+        urlUpload.value = '';
+        uploadPlaceholder.classList.add('hidden'); // Start by hiding
+        filePreviewContainer.classList.add('hidden');
+
+        // Reset UI elements
+        uploadPlaceholder.classList.remove('hidden');
+        translateBtn.disabled = true;
+
+        document.querySelector('.upload-grid').classList.remove('hidden');
+    });
+});
