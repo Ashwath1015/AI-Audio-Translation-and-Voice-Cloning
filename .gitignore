@@ -13,3 +13,7 @@ backend/downloads/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Secrets
+.env
+backend/.env
