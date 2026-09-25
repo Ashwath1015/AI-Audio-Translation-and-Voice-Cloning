@@ -24,7 +24,7 @@ Experience the AI translation pipeline in action.
 
 | Original Video | Translated Video (Hindi) |
 | :---: | :---: |
-| <video src="dummy for AT.mp4" width="320" controls></video> | <video src="translated.mp4" width="320" controls></video> |
+| [▶️ Watch Original](dummy%20for%20AT.mp4) | [▶️ Watch Translated](translated.mp4) |
 
 **Description:** The original video is processed through the AI pipeline to translate the audio into **Hindi** while maintaining synchronization and natural flow.
 
