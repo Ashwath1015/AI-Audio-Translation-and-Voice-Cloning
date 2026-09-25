@@ -18,6 +18,16 @@ VoiceDub AI is a full-stack application that allows users to translate videos in
 - **Dynamic Theming**: Full Light and Dark mode support with persistence.
 - **Integrated Info System**: Glassmorphism modal system providing detailed product, company, and support information.
 
+## 📺 Demo
+
+Experience the AI translation pipeline in action.
+
+| Original Video | Translated Video (Hindi) |
+| :---: | :---: |
+| <video src="dummy for AT.mp4" width="320" controls></video> | <video src="translated.mp4" width="320" controls></video> |
+
+**Description:** The original video is processed through the AI pipeline to translate the audio into **Hindi** while maintaining synchronization and natural flow.
+
 ## 🛠️ Technical Stack
 
 - **Frontend**: HTML5, CSS3 (Glassmorphism), and JavaScript (ES6+).
